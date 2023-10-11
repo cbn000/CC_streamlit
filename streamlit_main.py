@@ -6,9 +6,11 @@ from sklearn.metrics import f1_score
 from xgboost import XGBClassifier
 from sklearn.metrics import classification_report
 import pickle
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Function for loading pickle with model and pickle with encoder
-@st.cache_data
+#@st.cache_data
 def load_pickles():
     model = pickle.load(open("cc_model.pkl", "rb"))
     encoder_dict = pickle.load(open("cc_label_encoders.pkl", "rb"))
@@ -40,8 +42,8 @@ def load_data(data_file_path):
 
 # function for preprocessing the data
 def preprocess_data(dataframe):
-    mask = ['Gender', 'Age', 'Debt', 'Married', 'BankCustomer', 'YearsEmployed', 'PriorDefault', 'Employed', 'CreditScore',
-        'DriversLicense', 'Citizen', 'Income'] 
+    mask = ['Gender', 'Age', 'Debt', 'Married', 'BankCustomer', 'EducationLevel', 'Ethnicity', 'YearsEmployed', 'PriorDefault',
+        'Employed', 'CreditScore', 'DriversLicense', 'Citizen', 'Income'] 
     # apply mask
     X = dataframe[mask]
     y = dataframe["ApprovalStatus"]
@@ -72,13 +74,28 @@ model, encoder_dict = load_pickles()
 
 
 # Body of the app
-st.title('Title')
+st.title('Credit Card Approval')
 
-st.header('Problem Description')
-st.write('Description')
+st.header('Data Description')
+# Approval ratio per Ethnicity
+approval_ethnicity = cc_data.groupby('Ethnicity')['ApprovalStatus'].value_counts(normalize=True).to_frame().reset_index()
+data_plot = approval_ethnicity[approval_ethnicity['ApprovalStatus'] == '+'].drop('ApprovalStatus', axis=1)
+fig = px.bar(data_plot, x='Ethnicity', y='proportion', title='Approval Ratio per Ethnicity')
+st.plotly_chart(fig)
+# Median Income per Ethnicity
+# Mean of income per ethnicity
+data_plot = cc_data.groupby('Ethnicity')['Income'].mean()
+print(data_plot.sort_values(ascending=False).to_frame().reset_index().loc[1, "Income"])
+# plot with maximum of 1234 on y axis
+fig = px.bar(data_plot, 
+      range_y=(0, data_plot.sort_values(ascending=False).to_frame().reset_index().loc[1, "Income"]*1.1)
+       )
+st.plotly_chart(fig)
 
-st.header('Prediction')
-st.write('Description')
+
+st.header('Credit Card Approval Form')
+
+st.write('Please enter customer data:')
 
 # Creating the input fields using the data of the first row of the train data as default values
 data_row0 = X.iloc[0, :].to_dict()
@@ -92,14 +109,17 @@ input_fields = {}
 for col in X.columns:
     if dtypes[col] == "int64":
         input_fields[col] = st.slider(
-            col, min_value=min_values[col], max_value=max_values[col], value=data_row0[col]
+            f"Please enter {col} value for customer:",
+            min_value=min_values[col], max_value=max_values[col], value=data_row0[col],
         )
     elif dtypes[col] == "float64":
         input_fields[col] = st.slider(
-            col, min_value=min_values[col], max_value=max_values[col], value=data_row0[col]
+            f"Please enter {col} value for customer:", 
+            min_value=min_values[col], max_value=max_values[col], value=data_row0[col]
         )
     else:
-        input_fields[col] = st.selectbox(col, X[col].unique())
+        input_fields[col] = st.selectbox(f"Please enter {col} value for customer:", 
+                                         X[col].unique())
 
 # Inputs to dataframe
 df_input = pd.DataFrame([input_fields])
