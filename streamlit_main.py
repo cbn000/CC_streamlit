@@ -86,6 +86,7 @@ cc_data = load_data("data/cc_approvals.data")
 X, y = preprocess_data(cc_data)
 # Load model and encoder
 model, encoder_dict = load_pickles()
+# X = apply_encoder(X, encoder_dict)
 
 
 # Body of the app
@@ -158,17 +159,17 @@ fig = px.bar(data_plot, x='Ethnicity', y='proportion',
              title='Approval Ratio per Ethnicity')
 st.plotly_chart(fig)
 
-# Median Income per Ethnicity
-# Mean of income per ethnicity
-data_plot = cc_data.groupby('Ethnicity')['Income'].mean()
-print(data_plot.sort_values(
-    ascending=False).to_frame().reset_index().loc[1, "Income"])
-range_y=(0, data_plot.sort_values(
-                      ascending=False).to_frame().reset_index().loc[1, "Income"]*1.1)
-data_plot = cc_data.groupby('Ethnicity')['Income'].mean().to_frame().reset_index()
-# plot with maximum of 1234 on y axis
-fig = px.bar(data_plot, x='Ethnicity', y='Income',
-             range_y=range_y,
-             title="Income per Ethniciy"
-            )
+st.header('Feature Importance')
+# get feature importance from the model
+importance = model.coef_[0]
+
+# create a dataframe with feature importance
+data_plot = pd.DataFrame({'feature': X.columns, 'importance': importance})
+# sort values by importance
+data_plot = data_plot.sort_values('importance', ascending=False)
+# plot feature importance
+fig = px.bar(data_plot, x='feature', y='importance', title='Feature Importance from Logistic Regression', orientation='v', 
+       height=600, width=800, color='feature')
 st.plotly_chart(fig)
+
+# st.write(cc_data.head())
