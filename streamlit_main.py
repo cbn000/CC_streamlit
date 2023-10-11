@@ -41,6 +41,10 @@ def load_data(data_file_path):
                     "Income",
                     "ApprovalStatus"]
     # Add column names
+    # st.write(cc_data.head())
+    # write unique values per column
+    # for col in cc_data.columns:
+    #     st.write(f"Unique values for {col}: {cc_data[col].unique()}")
     cc_data.columns = column_names
     return cc_data
 
@@ -77,6 +81,7 @@ def apply_encoder(dataframe, encoder_dict):
 
 # Load data
 cc_data = load_data("data/cc_approvals.data")
+# cc_data = load_data("data/cc_clean.csv")
 # Preprocess data
 X, y = preprocess_data(cc_data)
 # Load model and encoder
@@ -131,6 +136,8 @@ if prediction == 1:
 else:
     st.error('Reject!')
 
+# Merge X and y to cc_data
+cc_data = pd.concat([X, y], axis=1)
 
 st.header('Data Description')
 # Approval ratio per Gender
@@ -156,9 +163,12 @@ st.plotly_chart(fig)
 data_plot = cc_data.groupby('Ethnicity')['Income'].mean()
 print(data_plot.sort_values(
     ascending=False).to_frame().reset_index().loc[1, "Income"])
+range_y=(0, data_plot.sort_values(
+                      ascending=False).to_frame().reset_index().loc[1, "Income"]*1.1)
+data_plot = cc_data.groupby('Ethnicity')['Income'].mean().to_frame().reset_index()
 # plot with maximum of 1234 on y axis
-fig = px.bar(data_plot,
-             range_y=(0, data_plot.sort_values(
-                 ascending=False).to_frame().reset_index().loc[1, "Income"]*1.1)
-             )
+fig = px.bar(data_plot, x='Ethnicity', y='Income',
+             range_y=range_y,
+             title="Income per Ethniciy"
+            )
 st.plotly_chart(fig)
